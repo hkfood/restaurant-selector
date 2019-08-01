@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Hotpot
+    
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 60
+
+Resources:
+  Hotpot:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: app.handler
+      Runtime: nodejs8.10
+      MemorySize: 128
+      Role: arn:aws:iam::299006707712:role/role-hotpot
+      FunctionName: Hotpot
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          S3_BUCKET: hotpot-results
+      ReservedConcurrentExecutions: 1
+      Tags:
+        project: hotpot
+  HotpotFireEvent: 
+    Type: AWS::Events::Rule
+    Properties:
+      Name: Hotpot-Fire-Event
+      ScheduleExpression: cron(1 10 * * ? *)
+      Targets:
+        - Id: Hotpot
+          Arn:
+            Fn::GetAtt:
+              - Hotpot
+              - Arn
+  HotpotPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - Hotpot
+        - Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - HotpotFireEvent
+        - Arn
+
+#Outputs:
+
+#  HelloWorldApi:
+#    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+#    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+
+#  HelloWorldFunction:
+#    Description: "Hello World Lambda Function ARN"
+#    Value: !GetAtt HelloWorldFunction.Arn
+
+#  HelloWorldFunctionIamRole:
+#    Description: "Implicit IAM Role created for Hello World function"
+#    Value: !GetAtt HelloWorldFunctionRole.Arn
